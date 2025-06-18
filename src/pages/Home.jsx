@@ -12,6 +12,7 @@ import {
 import { supabase } from "../supabaseClient";
 import ProfileCard from "../components/ProfileCard";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { evaluate } from "mathjs";
 
 const Home = () => {
   const [profiles, setProfiles] = useState([]);
@@ -82,12 +83,19 @@ const Home = () => {
     setTransactionData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleTransactionSubmit = async () => {
+  const handleTransactionSubmit = async (parsedAmount) => {
     try {
+
+        const raw = transactionData.amount;
+        const amount = evaluate(raw);
+
+        if (isNaN(amount)) throw new Error("Invalid amount");
+
+
       const newBalance = await submitTransaction(
         selectedProfile,
         transactionType,
-        transactionData
+        {...transactionData, amount: parsedAmount}
       );
       setProfiles((prev) =>
         prev.map((p) =>

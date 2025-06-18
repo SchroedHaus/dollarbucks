@@ -9,6 +9,7 @@ import {
   submitTransaction,
   fetchTransactionHistory,
 } from "../utils/profileService";
+import { supabase } from "../supabaseClient";
 
 const Home = () => {
   const [profiles, setProfiles] = useState([]);
@@ -27,6 +28,13 @@ const Home = () => {
   });
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [newProfile, setNewProfile] = useState({
+    name: "",
+    balance: "",
+    imageUrl: "",
+  });
+
 
   useEffect(() => {
     fetchProfiles().then(setProfiles).catch(console.error);
@@ -97,6 +105,15 @@ const Home = () => {
   return (
     <>
       <Header />
+      <div className="flex justify-end px-6 mt-4">
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+          onClick={() => setAddModalOpen(true)}
+        >
+          + Add Profile
+        </button>
+      </div>
+
       <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {profiles.map((profile) => (
           <div
@@ -171,6 +188,84 @@ const Home = () => {
             transactions={transactions}
             profileName={selectedProfile?.name}
           />
+        )}
+        {addModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md relative shadow-xl">
+              <button
+                onClick={() => setAddModalOpen(false)}
+                className="absolute top-2 right-4 text-xl font-bold text-gray-500 hover:text-red-500"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-semibold mb-4">Add New Profile</h2>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  name="name"
+                  value={newProfile.name}
+                  onChange={(e) =>
+                    setNewProfile((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Name"
+                  className="w-full px-4 py-2 border rounded-xl"
+                />
+                <input
+                  type="number"
+                  name="balance"
+                  value={newProfile.balance}
+                  onChange={(e) =>
+                    setNewProfile((prev) => ({
+                      ...prev,
+                      balance: e.target.value,
+                    }))
+                  }
+                  placeholder="Initial Balance"
+                  className="w-full px-4 py-2 border rounded-xl"
+                />
+                <input
+                  type="text"
+                  name="imageUrl"
+                  value={newProfile.imageUrl}
+                  onChange={(e) =>
+                    setNewProfile((prev) => ({
+                      ...prev,
+                      imageUrl: e.target.value,
+                    }))
+                  }
+                  placeholder="Image URL (optional)"
+                  className="w-full px-4 py-2 border rounded-xl"
+                />
+                <button
+                  onClick={async () => {
+                    const { data, error } = await supabase
+                      .from("profiles")
+                      .insert([
+                        {
+                          name: newProfile.name,
+                          balance: parseFloat(newProfile.balance),
+                          imageUrl: newProfile.imageUrl || null,
+                        },
+                      ])
+                      .select()
+                      .single();
+
+                    if (error) {
+                      alert("Error adding profile: " + error.message);
+                      return;
+                    }
+
+                    setProfiles((prev) => [...prev, data]);
+                    setAddModalOpen(false);
+                    setNewProfile({ name: "", balance: "", imageUrl: "" });
+                  }}
+                  className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700"
+                >
+                  Save Profile
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>

@@ -10,6 +10,8 @@ import {
   fetchTransactionHistory,
 } from "../utils/profileService";
 import { supabase } from "../supabaseClient";
+import ProfileCard from "../components/ProfileCard";
+import { Swiper, SwiperSlide } from "swiper/react";
 
 const Home = () => {
   const [profiles, setProfiles] = useState([]);
@@ -34,7 +36,6 @@ const Home = () => {
     balance: "",
     imageUrl: "",
   });
-
 
   useEffect(() => {
     fetchProfiles().then(setProfiles).catch(console.error);
@@ -66,7 +67,9 @@ const Home = () => {
     try {
       await updateProfile(selectedProfile.id, formData);
       setProfiles((prev) =>
-        prev.map((p) => (p.id === selectedProfile.id ? { ...p, ...formData } : p))
+        prev.map((p) =>
+          p.id === selectedProfile.id ? { ...p, ...formData } : p
+        )
       );
       setIsModalOpen(false);
     } catch (error) {
@@ -81,9 +84,15 @@ const Home = () => {
 
   const handleTransactionSubmit = async () => {
     try {
-      const newBalance = await submitTransaction(selectedProfile, transactionType, transactionData);
+      const newBalance = await submitTransaction(
+        selectedProfile,
+        transactionType,
+        transactionData
+      );
       setProfiles((prev) =>
-        prev.map((p) => (p.id === selectedProfile.id ? { ...p, balance: newBalance } : p))
+        prev.map((p) =>
+          p.id === selectedProfile.id ? { ...p, balance: newBalance } : p
+        )
       );
       setTransactionModalOpen(false);
     } catch (error) {
@@ -114,53 +123,39 @@ const Home = () => {
         </button>
       </div>
 
-      <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="hidden md:grid p-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {profiles.map((profile) => (
-          <div
+          <ProfileCard
             key={profile.id}
-            className="bg-white rounded-2xl shadow-md p-4 flex flex-col items-center space-y-2 hover:shadow-lg transition"
-          >
-            <img
-              src={profile.imageUrl || "https://via.placeholder.com/100"}
-              alt={profile.name || "Unnamed"}
-              className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
-            />
-            <h2 className="text-lg font-semibold">
-              {profile.name || "Unnamed"}
-            </h2>
-            <p className="text-gray-500">
-              Balance: {parseFloat(profile.balance).toFixed(2) ?? 0}
-            </p>
-
-            <div className="flex gap-2 mt-2">
-              <button
-                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-xl text-sm"
-                onClick={() => openTransactionModal(profile, "add")}
-              >
-                Add Money
-              </button>
-              <button
-                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-xl text-sm"
-                onClick={() => openTransactionModal(profile, "withdraw")}
-              >
-                Withdraw
-              </button>
-            </div>
-
-            <button
-              className="text-sm text-blue-500 mt-2"
-              onClick={() => openModal(profile)}
-            >
-              Edit Profile
-            </button>
-            <button
-              className="text-sm text-gray-600 underline"
-              onClick={() => openHistoryModal(profile)}
-            >
-              View History
-            </button>
-          </div>
+            profile={profile}
+            openModal={openModal}
+            openTransactionModal={openTransactionModal}
+            openHistoryModal={openHistoryModal}
+          />
         ))}
+        </div>
+
+        {/* Slider view for mobile */}
+        <div className="block md:hidden px-4">
+          <Swiper
+            spaceBetween={16}
+            slidesPerView={1.2}
+            onSlideChange={() => {}}
+            onSwiper={(swiper) => {}}
+          >
+            {profiles.map((profile) => (
+              <SwiperSlide key={profile.id}>
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  openModal={openModal}
+                  openTransactionModal={openTransactionModal}
+                  openHistoryModal={openHistoryModal}
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
 
         {isModalOpen && (
           <EditProfileModal
@@ -189,6 +184,7 @@ const Home = () => {
             profileName={selectedProfile?.name}
           />
         )}
+
         {addModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md relative shadow-xl">
@@ -267,7 +263,7 @@ const Home = () => {
             </div>
           </div>
         )}
-      </div>
+
     </>
   );
 };

@@ -45,23 +45,30 @@ const EditProfileModal = ({ isOpen, onClose, formData, onChange, onSave, profile
         </button>
         <h2 className="text-xl font-semibold mb-4">Edit Profile</h2>
         <div className="space-y-3">
-          <img
-            src={formData.imageUrl || "https://via.placeholder.com/100"}
-            alt={formData.name || "Unnamed"}
-            className="w-24 h-24 rounded-full object-cover border mx-auto"
-          />
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="w-full px-4 py-2 border rounded-xl"
-          />
-
-          {uploading && (
-            <p className="text-sm text-gray-500">Uploading image…</p>
-          )}
-
+          <div className="flex flex-col items-center space-y-2">
+            <label className="cursor-pointer relative group">
+              <img
+                src={formData.imageUrl || "https://via.placeholder.com/100"}
+                alt={formData.name || "Unnamed"}
+                className="w-24 h-24 rounded-full object-cover border group-hover:brightness-90 transition"
+              />
+              <span className="absolute bottom-0 left-0 right-0 text-xs text-white bg-black bg-opacity-60 rounded-b-full py-1 text-center opacity-0 group-hover:opacity-100 transition">
+                Change Photo
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
+            {uploading && (
+              <p className="text-sm text-gray-500 mt-1">Uploading image…</p>
+            )}
+          </div>
+          <label className="w-full text-left text-sm font-medium text-gray-700">
+            Name
+          </label>
           <input
             type="text"
             name="name"
@@ -70,6 +77,9 @@ const EditProfileModal = ({ isOpen, onClose, formData, onChange, onSave, profile
             placeholder="Name"
             className="w-full px-4 py-2 border rounded-xl"
           />
+          <label className="w-full text-left text-sm font-medium text-gray-700">
+            Balance
+          </label>
           <input
             type="number"
             name="balance"
@@ -78,26 +88,20 @@ const EditProfileModal = ({ isOpen, onClose, formData, onChange, onSave, profile
             placeholder="Balance"
             className="w-full px-4 py-2 border rounded-xl"
           />
-          <input
-            type="text"
-            name="imageUrl"
-            value={formData.imageUrl}
-            onChange={onChange}
-            placeholder="Image URL"
-            className="w-full px-4 py-2 border rounded-xl"
-          />
           <button
             onClick={onSave}
             className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700"
           >
             Save Changes
           </button>
-          <button
-            onClick={onDelete}
-            className="w-full bg-red-600 text-white py-2 rounded-xl hover:bg-red-700"
-          >
-            Delete Profile
-          </button>
+          <div className="text-center">
+            <a
+              onClick={onDelete}
+              className="w-full text-red-600 py-2 rounded-xl underline cursor-pointer hover:no-underline"
+            >
+              Delete Profile
+            </a>
+          </div>
         </div>
       </div>
     </div>

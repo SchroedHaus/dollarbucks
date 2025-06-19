@@ -1,6 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 
 const HistoryModal = ({ isOpen, onClose, selectedProfile, transactions, onDeleteTransaction }) => {
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredTransactions = transactions.filter((t) => {
+    const note = t.note?.toLowerCase() || "";
+    const amount = t.adjustment.toFixed(2);
+    const query = searchQuery.toLowerCase();
+
+    return note.includes(query) || amount.includes(query);
+  });
+
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -14,11 +25,20 @@ const HistoryModal = ({ isOpen, onClose, selectedProfile, transactions, onDelete
         <h2 className="text-xl font-semibold mb-4">
           {selectedProfile?.name || "Profile"} - Transaction History
         </h2>
-        {transactions.length === 0 ? (
+
+        <input
+          type="text"
+          placeholder="Search by note or amount"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full mb-4 px-4 py-2 border rounded-xl"
+        />
+
+        {filteredTransactions.length === 0 ? (
           <p className="text-gray-500 text-center">No transactions yet.</p>
         ) : (
           <ul className="space-y-3">
-            {transactions.map((t) => (
+            {filteredTransactions.map((t) => (
               <li
                 key={t.id}
                 className="border p-3 rounded-xl flex justify-between items-start"

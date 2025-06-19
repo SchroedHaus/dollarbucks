@@ -43,6 +43,8 @@ const TransactionModal = ({ isOpen, onClose, transactionType, transactionData, o
         <div className="space-y-3">
           <input
             type="text"
+            inputMode="decimal"
+            pattern="[0-9]*"
             name="amount"
             value={transactionData.amount}
             onChange={onChange}

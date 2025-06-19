@@ -4,15 +4,16 @@ import EditProfileModal from "../components/EditProfileModal";
 import TransactionModal from "../components/TransactionModal";
 import HistoryModal from "../components/HistoryModal";
 import {
-  fetchProfiles,
   updateProfile,
   submitTransaction,
   fetchTransactionHistory,
+  fetchUserProfiles,
 } from "../utils/profileService";
 import { supabase } from "../supabaseClient";
 import ProfileCard from "../components/ProfileCard";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { evaluate } from "mathjs";
+import AddProfileModal from "../components/AddProfileModal";
 
 const Home = () => {
   const [profiles, setProfiles] = useState([]);
@@ -37,9 +38,10 @@ const Home = () => {
     balance: "",
     imageUrl: "",
   });
+  const [newProfileImageFile, setNewProfileImageFile] = useState(null);
 
   useEffect(() => {
-    fetchProfiles().then(setProfiles).catch(console.error);
+    fetchUserProfiles().then(setProfiles).catch(console.error);
   }, []);
 
   const openModal = (profile) => {
@@ -85,17 +87,15 @@ const Home = () => {
 
   const handleTransactionSubmit = async (parsedAmount) => {
     try {
+      const raw = transactionData.amount;
+      const amount = evaluate(raw);
 
-        const raw = transactionData.amount;
-        const amount = evaluate(raw);
-
-        if (isNaN(amount)) throw new Error("Invalid amount");
-
+      if (isNaN(amount)) throw new Error("Invalid amount");
 
       const newBalance = await submitTransaction(
         selectedProfile,
         transactionType,
-        {...transactionData, amount: parsedAmount}
+        { ...transactionData, amount: parsedAmount }
       );
       setProfiles((prev) =>
         prev.map((p) =>
@@ -108,6 +108,44 @@ const Home = () => {
     }
   };
 
+  const handleDeleteTransaction = async (transaction) => {
+    if (!window.confirm("Delete this transaction?")) return;
+
+    try {
+      // 1. Delete from transaction_join
+      const { error: joinError } = await supabase
+        .from("transaction_join")
+        .delete()
+        .eq("transaction_id", transaction.id)
+        .eq("profile_id", selectedProfile.id);
+
+      if (joinError) throw joinError;
+
+      // 2. Delete from transactions
+      const { error: txError } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("id", transaction.id);
+
+      if (txError) throw txError;
+
+      // 3. Update profile balance locally
+      const updatedBalance =
+        parseFloat(selectedProfile.balance) - transaction.adjustment;
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === selectedProfile.id ? { ...p, balance: updatedBalance } : p
+        )
+      );
+
+      // 4. Update transaction list in modal
+      setTransactions((prev) => prev.filter((t) => t.id !== transaction.id));
+    } catch (err) {
+      alert("Error deleting transaction: " + err.message);
+    }
+  };
+  
+
   const openHistoryModal = async (profile) => {
     setSelectedProfile(profile);
     setHistoryModalOpen(true);
@@ -118,6 +156,27 @@ const Home = () => {
       alert("Error loading history: " + error.message);
     }
   };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this profile?"))
+      return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", selectedProfile.id);
+
+      if (error) throw error;
+
+      setProfiles((prev) => prev.filter((p) => p.id !== selectedProfile.id));
+      setIsModalOpen(false);
+      setSelectedProfile(null);
+    } catch (err) {
+      alert("Error deleting profile: " + err.message);
+    }
+  };
+  
 
   return (
     <>
@@ -141,137 +200,69 @@ const Home = () => {
             openHistoryModal={openHistoryModal}
           />
         ))}
-        </div>
+      </div>
 
-        {/* Slider view for mobile */}
-        <div className="block md:hidden px-4">
-          <Swiper
-            spaceBetween={16}
-            slidesPerView={1.2}
-            onSlideChange={() => {}}
-            onSwiper={(swiper) => {}}
-          >
-            {profiles.map((profile) => (
-              <SwiperSlide key={profile.id}>
-                <ProfileCard
-                  key={profile.id}
-                  profile={profile}
-                  openModal={openModal}
-                  openTransactionModal={openTransactionModal}
-                  openHistoryModal={openHistoryModal}
-                />
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
+      {/* Slider view for mobile */}
+      <div className="block md:hidden px-4">
+        <Swiper
+          spaceBetween={16}
+          slidesPerView={1.2}
+          onSlideChange={() => {}}
+          onSwiper={(swiper) => {}}
+        >
+          {profiles.map((profile) => (
+            <SwiperSlide key={profile.id}>
+              <ProfileCard
+                key={profile.id}
+                profile={profile}
+                openModal={openModal}
+                openTransactionModal={openTransactionModal}
+                openHistoryModal={openHistoryModal}
+              />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
 
-        {isModalOpen && (
-          <EditProfileModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            formData={formData}
-            onChange={handleInputChange}
-            onSave={handleSave}
-          />
-        )}
-        {transactionModalOpen && (
-          <TransactionModal
-            isOpen={transactionModalOpen}
-            onClose={() => setTransactionModalOpen(false)}
-            transactionType={transactionType}
-            transactionData={transactionData}
-            onChange={handleTransactionChange}
-            onSubmit={handleTransactionSubmit}
-          />
-        )}
-        {historyModalOpen && (
-          <HistoryModal
-            isOpen={historyModalOpen}
-            onClose={() => setHistoryModalOpen(false)}
-            transactions={transactions}
-            profileName={selectedProfile?.name}
-          />
-        )}
+      {isModalOpen && (
+        <EditProfileModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          formData={formData}
+          onChange={handleInputChange}
+          onSave={handleSave}
+          onDelete={handleDelete}
+        />
+      )}
+      {transactionModalOpen && (
+        <TransactionModal
+          isOpen={transactionModalOpen}
+          onClose={() => setTransactionModalOpen(false)}
+          transactionType={transactionType}
+          transactionData={transactionData}
+          onChange={handleTransactionChange}
+          onSubmit={handleTransactionSubmit}
+        />
+      )}
+      {historyModalOpen && (
+        <HistoryModal
+          isOpen={historyModalOpen}
+          onClose={() => setHistoryModalOpen(false)}
+          transactions={transactions}
+          profileName={selectedProfile?.name}
+          onDeleteTransaction={handleDeleteTransaction}
+        />
+      )}
 
-        {addModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md relative shadow-xl">
-              <button
-                onClick={() => setAddModalOpen(false)}
-                className="absolute top-2 right-4 text-xl font-bold text-gray-500 hover:text-red-500"
-              >
-                ×
-              </button>
-              <h2 className="text-xl font-semibold mb-4">Add New Profile</h2>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  name="name"
-                  value={newProfile.name}
-                  onChange={(e) =>
-                    setNewProfile((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="Name"
-                  className="w-full px-4 py-2 border rounded-xl"
-                />
-                <input
-                  type="number"
-                  name="balance"
-                  value={newProfile.balance}
-                  onChange={(e) =>
-                    setNewProfile((prev) => ({
-                      ...prev,
-                      balance: e.target.value,
-                    }))
-                  }
-                  placeholder="Initial Balance"
-                  className="w-full px-4 py-2 border rounded-xl"
-                />
-                <input
-                  type="text"
-                  name="imageUrl"
-                  value={newProfile.imageUrl}
-                  onChange={(e) =>
-                    setNewProfile((prev) => ({
-                      ...prev,
-                      imageUrl: e.target.value,
-                    }))
-                  }
-                  placeholder="Image URL (optional)"
-                  className="w-full px-4 py-2 border rounded-xl"
-                />
-                <button
-                  onClick={async () => {
-                    const { data, error } = await supabase
-                      .from("profiles")
-                      .insert([
-                        {
-                          name: newProfile.name,
-                          balance: parseFloat(newProfile.balance),
-                          imageUrl: newProfile.imageUrl || null,
-                        },
-                      ])
-                      .select()
-                      .single();
-
-                    if (error) {
-                      alert("Error adding profile: " + error.message);
-                      return;
-                    }
-
-                    setProfiles((prev) => [...prev, data]);
-                    setAddModalOpen(false);
-                    setNewProfile({ name: "", balance: "", imageUrl: "" });
-                  }}
-                  className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700"
-                >
-                  Save Profile
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+      {addModalOpen && (
+        <AddProfileModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onProfileCreated={(newProfile) => 
+          setProfiles((prev) => [...prev, newProfile])
+        }
+        />
+      )}
     </>
   );
 };

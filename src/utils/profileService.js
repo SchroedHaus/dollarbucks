@@ -1,10 +1,29 @@
 import { supabase } from '../supabaseClient';
 
-export async function fetchProfiles() {
-  const { data, error } = await supabase.from('profiles').select('*');
+export const fetchUserProfiles = async () => {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  const userId = userData.user.id;
+
+  const { data, error } = await supabase
+    .from("profile_user_join")
+    .select(
+      `
+      profile_id,
+      profiles (
+        id,
+        name,
+        balance,
+        imageUrl
+      )
+    `
+    )
+    .eq("user_id", userId);
+
   if (error) throw error;
-  return data;
-}
+
+  return data.map((row) => row.profiles);
+};
 
 export async function updateProfile(id, formData) {
   const { error } = await supabase

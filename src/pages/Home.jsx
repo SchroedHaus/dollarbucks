@@ -203,15 +203,17 @@ const Home = () => {
       </div>
 
       {/* Slider view for mobile */}
-      <div className="block md:hidden px-4">
+      <div className="block md:hidden p-4">
         <Swiper
-          spaceBetween={16}
-          slidesPerView={1.2}
+          spaceBetween={24}
+          slidesPerView={1.1}
+          centeredSlides={true}
+          style={{overflow: "visible"}}
           onSlideChange={() => {}}
           onSwiper={(swiper) => {}}
         >
           {profiles.map((profile) => (
-            <SwiperSlide key={profile.id}>
+            <SwiperSlide key={profile.id} style={{overflow: "visible"}} className="!overflow-visible">
               <ProfileCard
                 key={profile.id}
                 profile={profile}

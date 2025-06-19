@@ -11,7 +11,7 @@ const ProfileCard = ({
     <img
       src={profile.imageUrl || "https://via.placeholder.com/100"}
       alt={profile.name || "Unnamed"}
-      className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
+      className="w-24 h-24 rounded-2xl object-cover border-2 border-gray-300"
     />
     <h2 className="text-lg font-semibold">{profile.name || "Unnamed"}</h2>
     <p className="text-gray-500">

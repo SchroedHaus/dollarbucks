@@ -1,18 +1,10 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 
-const EditScheduleModal = ({
-  isOpen,
-  onClose,
-  transaction,
-  onUpdated,
-  onDeleted,
-}) => {
+const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdated, onDeleted }) => {
   const [form, setForm] = useState({
     note: transaction?.note || "",
-    start_date: transaction?.start_date || "",
     adjustment: transaction?.adjustment || 0,
-    frequency: transaction?.frequency || "once",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,9 +13,7 @@ const EditScheduleModal = ({
     if (transaction) {
       setForm({
         note: transaction.note || "",
-        start_date: transaction.start_date || "",
         adjustment: transaction.adjustment || 0,
-        frequency: transaction.frequency || "once",
       });
     }
   }, [transaction]);
@@ -37,12 +27,10 @@ const EditScheduleModal = ({
     setLoading(true);
     setError(null);
     const { error } = await supabase
-      .from("scheduled_transactions")
+      .from("transactions")
       .update({
         note: form.note,
-        start_date: form.start_date,
         adjustment: parseFloat(form.adjustment),
-        frequency: form.frequency,
       })
       .eq("id", transaction.id);
     setLoading(false);
@@ -55,17 +43,12 @@ const EditScheduleModal = ({
   };
 
   const handleDelete = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this scheduled transaction?"
-      )
-    )
-      return;
+    if (!window.confirm("Are you sure you want to delete this transaction?")) return;
     setLoading(true);
-    const { error } = await supabase
-      .from("scheduled_transactions")
-      .delete()
-      .eq("id", transaction.id);
+    // Delete from transaction_join first
+    await supabase.from("transaction_join").delete().eq("transaction_id", transaction.id);
+    // Then delete from transactions
+    const { error } = await supabase.from("transactions").delete().eq("id", transaction.id);
     setLoading(false);
     if (error) {
       setError(error.message);
@@ -85,9 +68,7 @@ const EditScheduleModal = ({
         >
           ×
         </button>
-        <h2 className="text-xl font-semibold mb-4 text-center">
-          Edit Scheduled Transaction
-        </h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">Edit Transaction</h2>
         <div className="space-y-3">
           <input
             type="text"
@@ -98,13 +79,6 @@ const EditScheduleModal = ({
             className="w-full px-4 py-2 border rounded-xl"
           />
           <input
-            type="date"
-            name="start_date"
-            value={form.start_date}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded-xl"
-          />
-          <input
             type="number"
             name="adjustment"
             value={form.adjustment}
@@ -112,17 +86,6 @@ const EditScheduleModal = ({
             placeholder="Amount"
             className="w-full px-4 py-2 border rounded-xl"
           />
-          <select
-            name="frequency"
-            value={form.frequency}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded-xl"
-          >
-            <option value="once">Once</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <div className="flex gap-2 mt-4">
             <button
@@ -146,4 +109,4 @@ const EditScheduleModal = ({
   );
 };
 
-export default EditScheduleModal;
+export default EditTransactionModal;

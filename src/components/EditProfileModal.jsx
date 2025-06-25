@@ -90,7 +90,7 @@ const EditProfileModal = ({
           <input
             type="number"
             name="balance"
-            value={parseFloat(formData.balance).toFixed(2)}
+            value={formData.balance}
             onChange={onChange}
             placeholder="Balance"
             className="w-full px-4 py-2 border rounded-xl"
@@ -102,18 +102,18 @@ const EditProfileModal = ({
             Save Changes
           </button>
           <div className="text-center space-y-2">
-          <a
-            href="#"
-            className="w-full text-blue-600 py-2 rounded-xl underline cursor-pointer hover:no-underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (typeof onEditScheduledTransactions === 'function') {
-                onEditScheduledTransactions();
-              }
-            }}
-          >
-            Edit Scheduled Transactions
-          </a>
+            <a
+              href="#"
+              className="w-full text-blue-600 py-2 rounded-xl underline cursor-pointer hover:no-underline"
+              onClick={(e) => {
+                e.preventDefault();
+                if (typeof onEditScheduledTransactions === "function") {
+                  onEditScheduledTransactions();
+                }
+              }}
+            >
+              Edit Scheduled Transactions
+            </a>
           </div>
           <div className="text-center space-y-2">
             <a

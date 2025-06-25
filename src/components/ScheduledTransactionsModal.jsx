@@ -34,11 +34,15 @@ const ScheduledTransactionsModal = ({ isOpen, onClose, profileId }) => {
         >
           ×
         </button>
-        <h2 className="text-xl font-semibold mb-4 text-center">Scheduled Transactions</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">
+          Scheduled Transactions
+        </h2>
         {loading ? (
           <p className="text-center text-gray-500">Loading...</p>
         ) : scheduledTransactions.length === 0 ? (
-          <p className="text-center text-gray-500">No scheduled transactions found.</p>
+          <p className="text-center text-gray-500">
+            No scheduled transactions found.
+          </p>
         ) : (
           <ul className="space-y-4">
             {scheduledTransactions.map((tx) => (
@@ -48,15 +52,24 @@ const ScheduledTransactionsModal = ({ isOpen, onClose, profileId }) => {
                 onClick={() => setEditTx(tx)}
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold">{tx.note || "(No note)"}</span>
+                  <span className="font-semibold">
+                    {tx.note || "(No note)"}
+                  </span>
                   <span className="text-sm text-gray-500">{tx.frequency}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={tx.adjustment > 0 ? "text-green-600" : "text-red-600"}>
-                    {tx.adjustment > 0 ? "+" : ""}{tx.adjustment.toFixed(2)}
+                  <span
+                    className={
+                      tx.adjustment > 0 ? "text-green-600" : "text-red-600"
+                    }
+                  >
+                    {tx.adjustment > 0 ? "+" : ""}
+                    {tx.adjustment.toFixed(2)}
                   </span>
                   <span className="text-sm text-gray-400">
-                    {tx.start_date ? new Date(tx.start_date).toLocaleDateString() : ""}
+                    {tx.start_date
+                      ? new Date(tx.start_date).toLocaleDateString()
+                      : ""}
                   </span>
                 </div>
               </li>

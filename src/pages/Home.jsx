@@ -176,8 +176,13 @@ const Home = () => {
   const openHistoryModal = async (profile) => {
     setSelectedProfile(profile);
     setHistoryModalOpen(true);
+    await refreshTransactions(profile.id);
+  };
+
+  // Helper to refresh transactions for the selected profile
+  const refreshTransactions = async (profileId) => {
     try {
-      const txs = await fetchTransactionHistory(profile.id);
+      const txs = await fetchTransactionHistory(profileId);
       setTransactions(txs);
     } catch (error) {
       alert("Error loading history: " + error.message);
@@ -202,6 +207,13 @@ const Home = () => {
     }
   };
 
+  // Always keep profiles sorted alphabetically by name
+  const sortedProfiles = [...profiles].sort((a, b) =>
+    (a.name || "").localeCompare(b.name || "", undefined, {
+      sensitivity: "base",
+    })
+  );
+
   return (
     <>
       <Header />
@@ -215,7 +227,7 @@ const Home = () => {
       </div>
 
       <div className="hidden md:grid p-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {profiles.map((profile) => (
+        {sortedProfiles.map((profile) => (
           <ProfileCard
             key={profile.id}
             profile={profile}
@@ -236,7 +248,7 @@ const Home = () => {
           onSlideChange={() => {}}
           onSwiper={(swiper) => {}}
         >
-          {profiles.map((profile) => (
+          {sortedProfiles.map((profile) => (
             <SwiperSlide
               key={profile.id}
               style={{ overflow: "visible" }}
@@ -281,9 +293,9 @@ const Home = () => {
         <HistoryModal
           isOpen={historyModalOpen}
           onClose={() => setHistoryModalOpen(false)}
+          selectedProfile={selectedProfile}
           transactions={transactions}
-          profileName={selectedProfile?.name}
-          onDeleteTransaction={handleDeleteTransaction}
+          onTransactionUpdated={() => refreshTransactions(selectedProfile?.id)}
         />
       )}
 

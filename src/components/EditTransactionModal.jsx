@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 
-const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdated, onDeleted }) => {
+const EditTransactionModal = ({
+  isOpen,
+  onClose,
+  transaction,
+  onUpdated,
+  onDeleted,
+}) => {
   const [form, setForm] = useState({
     note: transaction?.note || "",
     adjustment: transaction?.adjustment || 0,
@@ -43,12 +49,19 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdated, onDelet
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this transaction?")) return;
+    if (!window.confirm("Are you sure you want to delete this transaction?"))
+      return;
     setLoading(true);
     // Delete from transaction_join first
-    await supabase.from("transaction_join").delete().eq("transaction_id", transaction.id);
+    await supabase
+      .from("transaction_join")
+      .delete()
+      .eq("transaction_id", transaction.id);
     // Then delete from transactions
-    const { error } = await supabase.from("transactions").delete().eq("id", transaction.id);
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("id", transaction.id);
     setLoading(false);
     if (error) {
       setError(error.message);
@@ -68,7 +81,9 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onUpdated, onDelet
         >
           ×
         </button>
-        <h2 className="text-xl font-semibold mb-4 text-center">Edit Transaction</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">
+          Edit Transaction
+        </h2>
         <div className="space-y-3">
           <input
             type="text"

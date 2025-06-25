@@ -3,11 +3,13 @@ import Header from "../components/Header";
 import EditProfileModal from "../components/EditProfileModal";
 import TransactionModal from "../components/TransactionModal";
 import HistoryModal from "../components/HistoryModal";
+import ScheduledTransactionsModal from "../components/ScheduledTransactionsModal";
 import {
   updateProfile,
   submitTransaction,
   fetchTransactionHistory,
   fetchUserProfiles,
+  checkUserLoggedIn,
 } from "../utils/profileService";
 import { supabase } from "../supabaseClient";
 import ProfileCard from "../components/ProfileCard";
@@ -29,18 +31,17 @@ const Home = () => {
   const [transactionData, setTransactionData] = useState({
     amount: "",
     note: "",
+    isScheduled: false,
+    start_date: "",
+    frequency: "once",
   });
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [newProfile, setNewProfile] = useState({
-    name: "",
-    balance: "",
-    imageUrl: "",
-  });
-  const [newProfileImageFile, setNewProfileImageFile] = useState(null);
+  const [scheduledModalOpen, setScheduledModalOpen] = useState(false);
 
   useEffect(() => {
+    checkUserLoggedIn();
     fetchUserProfiles().then(setProfiles).catch(console.error);
   }, []);
 
@@ -57,7 +58,13 @@ const Home = () => {
   const openTransactionModal = (profile, type) => {
     setSelectedProfile(profile);
     setTransactionType(type);
-    setTransactionData({ amount: "", note: "" });
+    setTransactionData({
+      amount: "",
+      note: "",
+      isScheduled: false,
+      start_date: "",
+      frequency: "once",
+    });
     setTransactionModalOpen(true);
   };
 
@@ -81,27 +88,48 @@ const Home = () => {
   };
 
   const handleTransactionChange = (e) => {
-    const { name, value } = e.target;
-    setTransactionData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setTransactionData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
-  const handleTransactionSubmit = async (parsedAmount) => {
+  const handleTransactionSubmit = async (
+    parsedAmount,
+    isScheduled,
+    start_date,
+    frequency
+  ) => {
     try {
       const raw = transactionData.amount;
-      const amount = evaluate(raw);
-
+      const amount = parsedAmount ?? raw;
       if (isNaN(amount)) throw new Error("Invalid amount");
-
-      const newBalance = await submitTransaction(
-        selectedProfile,
-        transactionType,
-        { ...transactionData, amount: parsedAmount }
-      );
-      setProfiles((prev) =>
-        prev.map((p) =>
-          p.id === selectedProfile.id ? { ...p, balance: newBalance } : p
-        )
-      );
+      if (isScheduled) {
+        await supabase.from("scheduled_transactions").insert([
+          {
+            profile_id: selectedProfile.id,
+            adjustment: amount,
+            note: transactionData.note,
+            start_date: start_date,
+            frequency: frequency,
+          },
+        ]);
+      } else {
+        const newBalance = await submitTransaction(
+          selectedProfile,
+          transactionType,
+          {
+            ...transactionData,
+            amount,
+          }
+        );
+        setProfiles((prev) =>
+          prev.map((p) =>
+            p.id === selectedProfile.id ? { ...p, balance: newBalance } : p
+          )
+        );
+      }
       setTransactionModalOpen(false);
     } catch (error) {
       alert(error.message);
@@ -144,7 +172,6 @@ const Home = () => {
       alert("Error deleting transaction: " + err.message);
     }
   };
-  
 
   const openHistoryModal = async (profile) => {
     setSelectedProfile(profile);
@@ -157,26 +184,23 @@ const Home = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this profile?"))
+  const handleDeleteProfile = async () => {
+    if (!selectedProfile) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this profile? This action cannot be undone."
+      )
+    )
       return;
-
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", selectedProfile.id);
-
-      if (error) throw error;
-
+      await supabase.from("profiles").delete().eq("id", selectedProfile.id);
       setProfiles((prev) => prev.filter((p) => p.id !== selectedProfile.id));
       setIsModalOpen(false);
       setSelectedProfile(null);
-    } catch (err) {
-      alert("Error deleting profile: " + err.message);
+    } catch (error) {
+      alert("Error deleting profile: " + error.message);
     }
   };
-  
 
   return (
     <>
@@ -208,18 +232,23 @@ const Home = () => {
           spaceBetween={24}
           slidesPerView={1.1}
           centeredSlides={true}
-          style={{overflow: "visible"}}
+          style={{ overflow: "visible" }}
           onSlideChange={() => {}}
           onSwiper={(swiper) => {}}
         >
           {profiles.map((profile) => (
-            <SwiperSlide key={profile.id} style={{overflow: "visible"}} className="!overflow-visible">
+            <SwiperSlide
+              key={profile.id}
+              style={{ overflow: "visible" }}
+              className="!overflow-visible"
+            >
               <ProfileCard
                 key={profile.id}
                 profile={profile}
                 openModal={openModal}
                 openTransactionModal={openTransactionModal}
                 openHistoryModal={openHistoryModal}
+                onDelete={handleDeleteProfile}
               />
             </SwiperSlide>
           ))}
@@ -233,7 +262,9 @@ const Home = () => {
           formData={formData}
           onChange={handleInputChange}
           onSave={handleSave}
-          onDelete={handleDelete}
+          onDelete={handleDeleteProfile}
+          profileId={selectedProfile?.id}
+          onEditScheduledTransactions={() => setScheduledModalOpen(true)}
         />
       )}
       {transactionModalOpen && (
@@ -256,13 +287,21 @@ const Home = () => {
         />
       )}
 
+      {scheduledModalOpen && (
+        <ScheduledTransactionsModal
+          isOpen={scheduledModalOpen}
+          onClose={() => setScheduledModalOpen(false)}
+          profileId={selectedProfile?.id}
+        />
+      )}
+
       {addModalOpen && (
         <AddProfileModal
-        isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onProfileCreated={(newProfile) => 
-          setProfiles((prev) => [...prev, newProfile])
-        }
+          isOpen={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          onProfileCreated={(newProfile) =>
+            setProfiles((prev) => [...prev, newProfile])
+          }
         />
       )}
     </>

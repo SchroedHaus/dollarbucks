@@ -1,63 +1,58 @@
-import { supabase } from '../supabaseClient';
+import { supabase } from "../supabaseClient";
 
-export const fetchUserProfiles = async () => {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  const userId = userData.user.id;
+export async function checkUserLoggedIn() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase
-    .from("profile_user_join")
-    .select(
-      `
-      profile_id,
-      profiles (
-        id,
-        name,
-        balance,
-        imageUrl
-      )
-    `
-    )
-    .eq("user_id", userId);
+  if (!user) {
+    console.error("User is not logged in");
+  }
+}
 
+export async function fetchUserProfiles() {
+  const { data, error } = await supabase.from("profiles").select("*");
   if (error) throw error;
-
-  return data.map((row) => row.profiles);
-};
+  return data;
+}
 
 export async function updateProfile(id, formData) {
   const { error } = await supabase
-    .from('profiles')
+    .from("profiles")
     .update({
       name: formData.name,
       balance: parseFloat(formData.balance),
       imageUrl: formData.imageUrl,
     })
-    .eq('id', id);
+    .eq("id", id);
   if (error) throw error;
 }
 
-export async function submitTransaction(profile, transactionType, transactionData) {
-  const multiplier = transactionType === 'withdraw' ? -1 : 1;
+export async function submitTransaction(
+  profile,
+  transactionType,
+  transactionData
+) {
+  const multiplier = transactionType === "withdraw" ? -1 : 1;
   const adjustment = multiplier * parseFloat(transactionData.amount);
 
   const { data: transaction, error: insertError } = await supabase
-    .from('transactions')
+    .from("transactions")
     .insert([{ adjustment, note: transactionData.note }])
     .select()
     .single();
   if (insertError) throw insertError;
 
   const { error: joinError } = await supabase
-    .from('transaction_join')
+    .from("transaction_join")
     .insert([{ profile_id: profile.id, transaction_id: transaction.id }]);
   if (joinError) throw joinError;
 
   const newBalance = (parseFloat(profile.balance) || 0) + adjustment;
   const { error: updateError } = await supabase
-    .from('profiles')
+    .from("profiles")
     .update({ balance: newBalance })
-    .eq('id', profile.id);
+    .eq("id", profile.id);
   if (updateError) throw updateError;
 
   return newBalance;
@@ -65,8 +60,9 @@ export async function submitTransaction(profile, transactionType, transactionDat
 
 export async function fetchTransactionHistory(profileId) {
   const { data, error } = await supabase
-    .from('transaction_join')
-    .select(`
+    .from("transaction_join")
+    .select(
+      `
       transaction_id,
       transactions (
         id,
@@ -74,8 +70,9 @@ export async function fetchTransactionHistory(profileId) {
         note,
         created_at
       )
-    `)
-    .eq('profile_id', profileId);
+    `
+    )
+    .eq("profile_id", profileId);
   if (error) throw error;
   return data.map((row) => row.transactions);
 }

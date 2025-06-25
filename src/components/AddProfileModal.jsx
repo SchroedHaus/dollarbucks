@@ -50,12 +50,6 @@ const AddProfileModal = ({ isOpen, onClose, onProfileCreated }) => {
 
       if (profileError) throw profileError;
 
-      const { error: joinError } = await supabase
-        .from("profile_user_join")
-        .insert([{ user_id: userData.user.id, profile_id: profile.id }]);
-
-      if (joinError) throw joinError;
-
       onProfileCreated(profile);
       setNewProfile({ name: "", balance: "", imageUrl: "" });
       setNewProfileImageFile(null);

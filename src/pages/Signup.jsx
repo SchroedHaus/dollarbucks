@@ -1,6 +1,6 @@
 // src/pages/Signup.jsx
 import React, { useState } from "react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../supabaseClient";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -37,7 +37,12 @@ const Signup = () => {
         className="bg-white p-6 rounded-2xl shadow-md w-full max-w-sm space-y-4"
       >
         <h2 className="text-2xl font-bold text-center">Sign Up</h2>
-
+        <p className="text-center mt-4 text-sm">
+          Already have an account?{" "}
+          <a href="/signin" className="text-blue-600 hover:underline">
+            Sign In
+          </a>
+        </p>
         <input
           type="email"
           className="w-full px-4 py-2 border border-gray-300 rounded-xl"

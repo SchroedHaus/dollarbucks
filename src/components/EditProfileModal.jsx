@@ -1,39 +1,48 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 
-const EditProfileModal = ({ isOpen, onClose, formData, onChange, onSave, profileId, onDelete }) => {
-    const [uploading, setUploading] = useState(false);
+const EditProfileModal = ({
+  isOpen,
+  onClose,
+  formData,
+  onChange,
+  onSave,
+  onDelete,
+  profileId,
+  onEditScheduledTransactions, // Add this line
+}) => {
+  const [uploading, setUploading] = useState(false);
 
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-        setUploading(true);
+    setUploading(true);
 
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${profileId}-${Date.now()}.${fileExt}`;
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${profileId}-${Date.now()}.${fileExt}`;
 
-        const { data, error } = await supabase.storage
-          .from("profile-images")
-          .upload(fileName, file, { upsert: true });
+    const { data, error } = await supabase.storage
+      .from("profile-images")
+      .upload(fileName, file, { upsert: true });
 
-        if (error) {
-          alert("Image upload failed: " + error.message);
-          setUploading(false);
-          return;
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from("profile-images")
-          .getPublicUrl(data.path);
-
-        onChange({
-          target: { name: "imageUrl", value: publicUrlData.publicUrl },
-        });
-        setUploading(false);
+    if (error) {
+      alert("Image upload failed: " + error.message);
+      setUploading(false);
+      return;
     }
-  
-    if (!isOpen) return null;
+
+    const { data: publicUrlData } = supabase.storage
+      .from("profile-images")
+      .getPublicUrl(data.path);
+
+    onChange({
+      target: { name: "imageUrl", value: publicUrlData.publicUrl },
+    });
+    setUploading(false);
+  };
+
+  if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md relative shadow-xl">
@@ -48,7 +57,10 @@ const EditProfileModal = ({ isOpen, onClose, formData, onChange, onSave, profile
           <div className="flex flex-col items-center space-y-2">
             <label className="cursor-pointer relative group">
               <img
-                src={formData.imageUrl || "https://via.placeholder.com/100"}
+                src={
+                  formData.imageUrl ||
+                  "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
+                }
                 alt={formData.name || "Unnamed"}
                 className="w-24 h-24 rounded-full object-cover border group-hover:brightness-90 transition"
               />
@@ -66,9 +78,7 @@ const EditProfileModal = ({ isOpen, onClose, formData, onChange, onSave, profile
               <p className="text-sm text-gray-500 mt-1">Uploading image…</p>
             )}
           </div>
-          <label className="w-full text-left text-sm font-medium text-gray-700">
-            Name
-          </label>
+
           <input
             type="text"
             name="name"
@@ -77,9 +87,6 @@ const EditProfileModal = ({ isOpen, onClose, formData, onChange, onSave, profile
             placeholder="Name"
             className="w-full px-4 py-2 border rounded-xl"
           />
-          <label className="w-full text-left text-sm font-medium text-gray-700">
-            Balance
-          </label>
           <input
             type="number"
             name="balance"
@@ -94,7 +101,21 @@ const EditProfileModal = ({ isOpen, onClose, formData, onChange, onSave, profile
           >
             Save Changes
           </button>
-          <div className="text-center">
+          <div className="text-center space-y-2">
+          <a
+            href="#"
+            className="w-full text-blue-600 py-2 rounded-xl underline cursor-pointer hover:no-underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (typeof onEditScheduledTransactions === 'function') {
+                onEditScheduledTransactions();
+              }
+            }}
+          >
+            Edit Scheduled Transactions
+          </a>
+          </div>
+          <div className="text-center space-y-2">
             <a
               onClick={onDelete}
               className="w-full text-red-600 py-2 rounded-xl underline cursor-pointer hover:no-underline"

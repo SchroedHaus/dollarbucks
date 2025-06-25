@@ -62,9 +62,9 @@ const EditProfileModal = ({
                   "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
                 }
                 alt={formData.name || "Unnamed"}
-                className="w-24 h-24 rounded-full object-cover border group-hover:brightness-90 transition"
+                className="w-24 h-24 rounded-2xl object-cover border group-hover:brightness-90 transition"
               />
-              <span className="absolute bottom-0 left-0 right-0 text-xs text-white bg-black bg-opacity-60 rounded-b-full py-1 text-center opacity-0 group-hover:opacity-100 transition">
+              <span className="absolute bottom-0 left-0 right-0 text-xs text-white bg-black bg-opacity-60 rounded-b-2xl py-1 text-center opacity-0 group-hover:opacity-100 transition">
                 Change Photo
               </span>
               <input

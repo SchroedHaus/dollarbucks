@@ -17,6 +17,8 @@ export async function fetchUserProfiles() {
 }
 
 export async function updateProfile(id, formData) {
+  console.log(formData);
+
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -26,6 +28,7 @@ export async function updateProfile(id, formData) {
     })
     .eq("id", id);
   if (error) throw error;
+  console.log('update successful');
 }
 
 export async function submitTransaction(

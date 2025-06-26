@@ -7,12 +7,12 @@
   "theme_color": "#2563eb",  // or your brand color
   "icons": [
     {
-      "src": "/dollarbucks apple icon.svg",
+      "src": "/dollarbucks apple icon.png",
       "type": "image/png",
       "sizes": "180x180"
     },
     {
-      "src": "/dollarbucks apple icon.svg",
+      "src": "/dollarbucks apple icon.png",
       "type": "image/png",
       "sizes": "512x512"
     }

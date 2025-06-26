@@ -1,9 +1,9 @@
 // supabase/functions/apply_scheduled_transactions/index.ts
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { supabase } from '../../../src/supabaseClient';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js';
 
 serve(async (req) => {
-
+  const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
   const { data: schedules, error } = await supabase
@@ -23,7 +23,7 @@ serve(async (req) => {
     // 1. Create transaction
     const { data: tx, error: txError } = await supabase
       .from("transactions")
-      .insert([{ note: schedule.note, adjustment: schedule.adjustment }])
+      .insert([{ note: schedule.note, adjustment: schedule.adjustment, profile_id: schedule.profile_id, }])
       .select()
       .single();
 
@@ -32,21 +32,13 @@ serve(async (req) => {
       continue;
     }
 
-    // 2. Link to profile
-    await supabase.from("transaction_join").insert([
-      {
-        profile_id: schedule.profile_id,
-        transaction_id: tx.id,
-      },
-    ]);
-
-    // 3. Update profile balance
+    // 2. Update profile balance
     await supabase.rpc("adjust_profile_balance", {
       profile_id_input: schedule.profile_id,
       delta: schedule.adjustment,
     });
 
-    // 4. Handle frequency
+    // 3. Handle frequency
     if (schedule.frequency === "once") {
       await supabase
         .from("scheduled_transactions")

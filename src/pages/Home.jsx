@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import EditProfileModal from "../components/EditProfileModal";
 import TransactionModal from "../components/TransactionModal";
@@ -14,7 +14,6 @@ import {
 import { supabase } from "../supabaseClient";
 import ProfileCard from "../components/ProfileCard";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { evaluate } from "mathjs";
 import AddProfileModal from "../components/AddProfileModal";
 
 const Home = () => {
@@ -41,11 +40,15 @@ const Home = () => {
   const [scheduledModalOpen, setScheduledModalOpen] = useState(false);
 
   useEffect(() => {
+    // check that the user is logged in
     checkUserLoggedIn();
+
+    // set the profiles for the user
     fetchUserProfiles().then(setProfiles).catch(console.error);
   }, []);
 
-  const openModal = (profile) => {
+  // Open the Edit Profile Modal
+  const openProfileModal = (profile) => {
     setSelectedProfile(profile);
     setFormData({
       name: profile.name || "",
@@ -55,6 +58,7 @@ const Home = () => {
     setIsModalOpen(true);
   };
 
+  // Open the Transaction Modal to add or withdraw money
   const openTransactionModal = (profile, type) => {
     setSelectedProfile(profile);
     setTransactionType(type);
@@ -68,11 +72,13 @@ const Home = () => {
     setTransactionModalOpen(true);
   };
 
+  // Make updates to the Profile form data
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Submit Profile changes to the database
   const handleSave = async () => {
     try {
       await updateProfile(selectedProfile.id, formData);
@@ -87,14 +93,17 @@ const Home = () => {
     }
   };
 
+  // Make updates to the transaction form
   const handleTransactionChange = (e) => {
     const { name, value, type, checked } = e.target;
     setTransactionData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    console.log("changes made to transaction form");
   };
 
+  // Save transaction to database
   const handleTransactionSubmit = async (
     parsedAmount,
     isScheduled,
@@ -136,57 +145,10 @@ const Home = () => {
     }
   };
 
-  const handleDeleteTransaction = async (transaction) => {
-    if (!window.confirm("Delete this transaction?")) return;
-
-    try {
-      // 1. Delete from transaction_join
-      const { error: joinError } = await supabase
-        .from("transaction_join")
-        .delete()
-        .eq("transaction_id", transaction.id)
-        .eq("profile_id", selectedProfile.id);
-
-      if (joinError) throw joinError;
-
-      // 2. Delete from transactions
-      const { error: txError } = await supabase
-        .from("transactions")
-        .delete()
-        .eq("id", transaction.id);
-
-      if (txError) throw txError;
-
-      // 3. Update profile balance locally
-      const updatedBalance =
-        parseFloat(selectedProfile.balance) - transaction.adjustment;
-      setProfiles((prev) =>
-        prev.map((p) =>
-          p.id === selectedProfile.id ? { ...p, balance: updatedBalance } : p
-        )
-      );
-
-      // 4. Update transaction list in modal
-      setTransactions((prev) => prev.filter((t) => t.id !== transaction.id));
-    } catch (err) {
-      alert("Error deleting transaction: " + err.message);
-    }
-  };
-
   const openHistoryModal = async (profile) => {
     setSelectedProfile(profile);
     setHistoryModalOpen(true);
     await refreshTransactions(profile.id);
-  };
-
-  // Helper to refresh transactions for the selected profile
-  const refreshTransactions = async (profileId) => {
-    try {
-      const txs = await fetchTransactionHistory(profileId);
-      setTransactions(txs);
-    } catch (error) {
-      alert("Error loading history: " + error.message);
-    }
   };
 
   const handleDeleteProfile = async () => {
@@ -207,6 +169,16 @@ const Home = () => {
     }
   };
 
+  // Helper to refresh transactions for the selected profile
+  const refreshTransactions = async (profileId) => {
+    try {
+      const txs = await fetchTransactionHistory(profileId);
+      setTransactions(txs);
+    } catch (error) {
+      alert("Error loading history: " + error.message);
+    }
+  };
+
   // Always keep profiles sorted alphabetically by name
   const sortedProfiles = [...profiles].sort((a, b) =>
     (a.name || "").localeCompare(b.name || "", undefined, {
@@ -217,105 +189,115 @@ const Home = () => {
   return (
     <>
       <Header />
-      <div className="flex justify-end px-6 mt-4">
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
-          onClick={() => setAddModalOpen(true)}
-        >
-          + Add Profile
-        </button>
-      </div>
-
-      <div className="hidden md:grid p-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {sortedProfiles.map((profile) => (
-          <ProfileCard
-            key={profile.id}
-            profile={profile}
-            openModal={openModal}
-            openTransactionModal={openTransactionModal}
-            openHistoryModal={openHistoryModal}
-          />
-        ))}
-      </div>
-
-      {/* Slider view for mobile */}
-      <div className="block md:hidden p-4">
-        <Swiper
-          spaceBetween={24}
-          slidesPerView={1.1}
-          centeredSlides={true}
-          style={{ overflow: "visible" }}
-          onSlideChange={() => {}}
-          onSwiper={(swiper) => {}}
-        >
-          {sortedProfiles.map((profile) => (
-            <SwiperSlide
-              key={profile.id}
-              style={{ overflow: "visible" }}
-              className="!overflow-visible"
+      <div className="flex justify-center">
+        <div className="max-w-[1200px] w-full">
+          <div className="flex justify-end px-6 mt-4">
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+              onClick={() => setAddModalOpen(true)}
             >
+              + Add Profile
+            </button>
+          </div>
+
+          <div className="hidden md:grid p-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {sortedProfiles.map((profile) => (
               <ProfileCard
                 key={profile.id}
                 profile={profile}
-                openModal={openModal}
+                openProfileModal={openProfileModal}
                 openTransactionModal={openTransactionModal}
                 openHistoryModal={openHistoryModal}
-                onDelete={handleDeleteProfile}
               />
-            </SwiperSlide>
-          ))}
-        </Swiper>
+            ))}
+          </div>
+
+          {/* Slider view for mobile */}
+          <div className="block md:hidden p-4">
+            <Swiper
+              spaceBetween={24}
+              slidesPerView={1.1}
+              centeredSlides={true}
+              style={{ overflow: "visible" }}
+              onSlideChange={() => {}}
+              onSwiper={(swiper) => {}}
+            >
+              {sortedProfiles.map((profile) => (
+                <SwiperSlide
+                  key={profile.id}
+                  style={{ overflow: "visible" }}
+                  className="!overflow-visible"
+                >
+                  <ProfileCard
+                    key={profile.id}
+                    profile={profile}
+                    openProfileModal={openProfileModal}
+                    openTransactionModal={openTransactionModal}
+                    openHistoryModal={openHistoryModal}
+                    onDelete={handleDeleteProfile}
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+
+          {isModalOpen && (
+            <EditProfileModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              formData={formData}
+              onChange={handleInputChange}
+              onSave={handleSave}
+              onDelete={handleDeleteProfile}
+              profileId={selectedProfile?.id}
+              onEditScheduledTransactions={() => setScheduledModalOpen(true)}
+            />
+          )}
+          {transactionModalOpen && (
+            <TransactionModal
+              isOpen={transactionModalOpen}
+              onClose={() => setTransactionModalOpen(false)}
+              transactionType={transactionType}
+              transactionData={transactionData}
+              onChange={handleTransactionChange}
+              onSubmit={handleTransactionSubmit}
+            />
+          )}
+          {historyModalOpen && (
+            <HistoryModal
+              isOpen={historyModalOpen}
+              onClose={() => setHistoryModalOpen(false)}
+              selectedProfile={selectedProfile}
+              transactions={transactions}
+              onTransactionUpdated={() =>
+                refreshTransactions(selectedProfile?.id)
+              }
+              onTransactionDeleted={() =>
+                refreshTransactions(selectedProfile?.id)
+              }
+              setProfiles={setProfiles}
+            />
+          )}
+
+          {scheduledModalOpen && (
+            <ScheduledTransactionsModal
+              isOpen={scheduledModalOpen}
+              onClose={() => setScheduledModalOpen(false)}
+              profileId={selectedProfile?.id}
+            />
+          )}
+
+          {addModalOpen && (
+            <AddProfileModal
+              isOpen={addModalOpen}
+              onClose={() => setAddModalOpen(false)}
+              onProfileCreated={(newProfile) =>
+                setProfiles((prev) => [...prev, newProfile])
+              }
+            />
+          )}
+        </div>
       </div>
-
-      {isModalOpen && (
-        <EditProfileModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          formData={formData}
-          onChange={handleInputChange}
-          onSave={handleSave}
-          onDelete={handleDeleteProfile}
-          profileId={selectedProfile?.id}
-          onEditScheduledTransactions={() => setScheduledModalOpen(true)}
-        />
-      )}
-      {transactionModalOpen && (
-        <TransactionModal
-          isOpen={transactionModalOpen}
-          onClose={() => setTransactionModalOpen(false)}
-          transactionType={transactionType}
-          transactionData={transactionData}
-          onChange={handleTransactionChange}
-          onSubmit={handleTransactionSubmit}
-        />
-      )}
-      {historyModalOpen && (
-        <HistoryModal
-          isOpen={historyModalOpen}
-          onClose={() => setHistoryModalOpen(false)}
-          selectedProfile={selectedProfile}
-          transactions={transactions}
-          onTransactionUpdated={() => refreshTransactions(selectedProfile?.id)}
-        />
-      )}
-
-      {scheduledModalOpen && (
-        <ScheduledTransactionsModal
-          isOpen={scheduledModalOpen}
-          onClose={() => setScheduledModalOpen(false)}
-          profileId={selectedProfile?.id}
-        />
-      )}
-
-      {addModalOpen && (
-        <AddProfileModal
-          isOpen={addModalOpen}
-          onClose={() => setAddModalOpen(false)}
-          onProfileCreated={(newProfile) =>
-            setProfiles((prev) => [...prev, newProfile])
-          }
-        />
-      )}
     </>
   );
 };

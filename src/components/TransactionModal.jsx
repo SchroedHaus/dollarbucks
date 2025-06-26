@@ -8,11 +8,13 @@ const TransactionModal = ({
   transactionData,
   onChange,
   onSubmit,
+  onDelete,
 }) => {
   const [evaluatedAmount, setEvaluatedAmount] = useState(null);
   const [parseError, setParseError] = useState(null);
 
   useEffect(() => {
+    console.log('transactionmodal open')
     try {
       if (transactionData.amount.trim() === "") {
         setEvaluatedAmount(null);
@@ -121,7 +123,7 @@ const TransactionModal = ({
                 evaluatedAmount,
                 transactionData.isScheduled,
                 transactionData.start_date,
-                transactionData.frequency
+                transactionData.frequency,
               );
             }}
             className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700"

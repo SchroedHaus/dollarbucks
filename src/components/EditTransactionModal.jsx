@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 
 const EditTransactionModal = ({
@@ -6,16 +6,15 @@ const EditTransactionModal = ({
   onClose,
   transaction,
   onUpdated,
-  onDeleted,
+  selectedProfile,
+  setProfiles,
+  onDelete,
 }) => {
-  const [form, setForm] = useState({
-    note: transaction?.note || "",
-    adjustment: transaction?.adjustment || 0,
-  });
+  const [form, setForm] = useState({ note: "", adjustment: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (transaction) {
       setForm({
         note: transaction.note || "",
@@ -32,13 +31,40 @@ const EditTransactionModal = ({
   const handleSave = async () => {
     setLoading(true);
     setError(null);
+    const oldAdjustment = parseFloat(transaction.adjustment);
+    const newAdjustment = parseFloat(form.adjustment);
+    const adjustmentDiff = newAdjustment - oldAdjustment;
+
     const { error } = await supabase
       .from("transactions")
       .update({
         note: form.note,
-        adjustment: parseFloat(form.adjustment),
+        adjustment: newAdjustment,
       })
       .eq("id", transaction.id);
+
+    if (!error && selectedProfile) {
+      // Update profile balance in database
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("balance")
+        .eq("id", selectedProfile.id)
+        .single();
+      if (!profileError && profile) {
+        const newBalance = parseFloat(profile.balance) + adjustmentDiff;
+        await supabase
+          .from("profiles")
+          .update({ balance: newBalance })
+          .eq("id", selectedProfile.id);
+        // Also update in UI
+        setProfiles &&
+          setProfiles((prev) =>
+            prev.map((p) =>
+              p.id === selectedProfile.id ? { ...p, balance: newBalance } : p
+            )
+          );
+      }
+    }
     setLoading(false);
     if (error) {
       setError(error.message);
@@ -62,13 +88,36 @@ const EditTransactionModal = ({
       .from("transactions")
       .delete()
       .eq("id", transaction.id);
+    // Update profile balance in database
+    if (selectedProfile) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("balance")
+        .eq("id", selectedProfile.id)
+        .single();
+      if (!profileError && profile) {
+        const newBalance =
+          parseFloat(profile.balance) - parseFloat(transaction.adjustment);
+        await supabase
+          .from("profiles")
+          .update({ balance: newBalance })
+          .eq("id", selectedProfile.id);
+        // Also update in UI
+        setProfiles &&
+          setProfiles((prev) =>
+            prev.map((p) =>
+              p.id === selectedProfile.id ? { ...p, balance: newBalance } : p
+            )
+          );
+      }
+    }
     setLoading(false);
     if (error) {
       setError(error.message);
     } else {
-      onDeleted && onDeleted();
       onClose();
     }
+    onDelete();
   };
 
   if (!isOpen || !transaction) return null;

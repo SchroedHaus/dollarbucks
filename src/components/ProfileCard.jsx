@@ -1,6 +1,6 @@
 const ProfileCard = ({
   profile,
-  openModal,
+  openProfileModal,
   openTransactionModal,
   openHistoryModal,
 }) => (
@@ -37,7 +37,7 @@ const ProfileCard = ({
     </div>
     <button
       className="text-sm text-blue-500 mt-2"
-      onClick={() => openModal(profile)}
+      onClick={() => openProfileModal(profile)}
     >
       Edit Profile
     </button>

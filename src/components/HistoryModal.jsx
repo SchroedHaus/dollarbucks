@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import EditTransactionModal from "./EditTransactionModal";
 
 const HistoryModal = ({
@@ -7,6 +7,8 @@ const HistoryModal = ({
   selectedProfile,
   transactions,
   onTransactionUpdated,
+  onTransactionDeleted,
+  setProfiles,
 }) => {
   const [editTx, setEditTx] = useState(null);
   const [search, setSearch] = useState("");
@@ -80,7 +82,9 @@ const HistoryModal = ({
           onClose={() => setEditTx(null)}
           transaction={editTx}
           onUpdated={onTransactionUpdated}
-          onDeleted={onTransactionUpdated}
+          setProfiles={setProfiles}
+          selectedProfile={selectedProfile}
+          onDelete={onTransactionDeleted}
         />
       </div>
     </div>

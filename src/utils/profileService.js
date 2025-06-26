@@ -38,7 +38,9 @@ export async function submitTransaction(
 
   const { data: transaction, error: insertError } = await supabase
     .from("transactions")
-    .insert([{ adjustment, note: transactionData.note }])
+    .insert([
+      { adjustment, note: transactionData.note, profile_id: profile.id },
+    ])
     .select()
     .single();
   if (insertError) throw insertError;
@@ -60,19 +62,10 @@ export async function submitTransaction(
 
 export async function fetchTransactionHistory(profileId) {
   const { data, error } = await supabase
-    .from("transaction_join")
-    .select(
-      `
-      transaction_id,
-      transactions (
-        id,
-        adjustment,
-        note,
-        created_at
-      )
-    `
-    )
-    .eq("profile_id", profileId);
+    .from("transactions")
+    .select("id, adjustment, note, created_at")
+    .eq("profile_id", profileId)
+    .order("created_at", { ascending: false });
   if (error) throw error;
-  return data.map((row) => row.transactions);
+  return data;
 }

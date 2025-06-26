@@ -31,7 +31,8 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex flex-col items-center pt-20 bg-gray-100">
+      <img src="/DollarBucks logo.svg" alt="" className="w-[500px] py-6" />
       <form
         onSubmit={handleSignup}
         className="bg-white p-6 rounded-2xl shadow-md w-full max-w-sm space-y-4"

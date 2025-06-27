@@ -4,7 +4,7 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2563eb",  // or your brand color
+  "theme_color": "#2563eb",
   "icons": [
     {
       "src": "/dollarbucks apple icon.png",

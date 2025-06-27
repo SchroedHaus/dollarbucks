@@ -189,7 +189,7 @@ const Home = () => {
   return (
     <>
       <Header />
-      <div className="flex justify-center">
+      <div className="flex justify-center pt-[60px]">
         <div className="max-w-[1200px] w-full">
           <div className="flex justify-end px-6 mt-4">
             <button
